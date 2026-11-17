@@ -1,0 +1,8 @@
+{
+  "name": "claude-mods",
+  "owner": { "name": "nicolas-palermo" },
+  "metadata": { "description": "Mods for Claude's own interface: themes, panels and more." },
+  "plugins": [
+    { "name": "vaporwave", "source": "./vaporwave", "description": "Neon vaporwave look with an animated sunset and retro grid." }
+  ]
+}
