@@ -15,7 +15,7 @@
     {
       "name": "guided-view",
       "source": "./guided-view",
-      "description": "A side panel that shows the goal, Claude's plan and the step it is on."
+      "description": "Review a PR in a side panel, its changes grouped by meaning with a title, summary and diff."
     }
   ]
 }

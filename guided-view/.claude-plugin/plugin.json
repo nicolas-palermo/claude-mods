@@ -1,6 +1,6 @@
 {
   "name": "guided-view",
   "version": "0.1.0",
-  "description": "A side panel that guides you through what Claude is doing: the goal, the plan, and the step it is on.",
+  "description": "Review a pull request in a side panel: changes grouped by meaning, each with a title, a summary and its diff.",
   "types": "./types/index.d.ts"
 }
