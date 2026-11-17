@@ -5,6 +5,7 @@ Mods for Claude's own interface: themes, panels, commands and more. Each mod liv
 | Mod | What it does |
 | --- | --- |
 | [vaporwave](./vaporwave) | Neon pink, violet and cyan colors with an animated sunset, striped sun and a retro grid that scrolls toward you. |
+| [guided-view](./guided-view) | A side panel beside the chat with the goal, Claude's plan and the step it is on, updated live. |
 
 ## Install a mod
 
