@@ -1,0 +1,6 @@
+{
+  "name": "guided-view",
+  "version": "0.1.0",
+  "description": "Review a pull request in a side panel: changes grouped by meaning, each with a title, a summary and its diff.",
+  "types": "./types/index.d.ts"
+}
