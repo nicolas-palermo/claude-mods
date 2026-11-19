@@ -3,7 +3,10 @@ name: glyph-plaude APK
 on:
   push:
     paths:
-      - 'glyph-plaude/**'
+      - 'glyph-plaude/app/**'
+      - 'glyph-plaude/*.gradle'
+      - 'glyph-plaude/gradle.properties'
+      - 'glyph-plaude/signing/**'
       - '.github/workflows/glyph-plaude.yml'
   workflow_dispatch:
 
@@ -39,15 +42,15 @@ jobs:
           ls -la app/libs
 
       - name: Build APK
-        run: gradle :app:assembleDebug --stacktrace
+        run: gradle :app:assembleRelease --stacktrace
 
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk plaude-glyph.apk
-          TAG="glyph-plaude-${{ github.run_number }}"
+          cp app/build/outputs/apk/release/app-release.apk plaude-glyph.apk
+          TAG="glyph-plaude-v1.${{ github.run_number }}"
           gh release create "$TAG" plaude-glyph.apk \
             --target "${{ github.sha }}" \
-            --title "Plaude Glyph Toy #${{ github.run_number }}" \
-            --notes "APK del Glyph Toy de Plaude para el Nothing Phone (4a) Pro. Bajalo desde el teléfono e instalalo."
+            --title "Plaude Glyph v1.${{ github.run_number }}" \
+            --notes "APK del Glyph Toy de Plaude para el Nothing Phone (4a) Pro. Built from ${{ github.ref_name }}."

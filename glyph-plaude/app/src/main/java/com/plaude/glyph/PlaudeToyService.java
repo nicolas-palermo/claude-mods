@@ -16,19 +16,13 @@ import com.nothing.ketchum.GlyphToy;
 
 /**
  * Base de los Glyph Toys AOD que muestran el logo de Plaude en la matriz 13x13
- * (137 LEDs, circular) del Nothing Phone (4a) Pro. La subclase define el LOGO.
- *
- * '#' = LED lleno, '+' = LED a media intensidad, '.' = apagado.
+ * (137 LEDs, circular) del Nothing Phone (4a) Pro. La subclase arma cada frame.
  * Las esquinas fuera del círculo no existen físicamente en el (4a) Pro.
  */
 public abstract class PlaudeToyService extends Service {
 
-    private static final int SIZE = 13;
-    private static final int FULL = 255;
-    private static final int HALF = 128;
-
-    /** 13 filas de 13 caracteres. */
-    protected abstract String[] logo();
+    /** Frame de 13x13 (169 valores de brillo, 0 a 255) para el momento actual. */
+    protected abstract int[] frame();
 
     private GlyphMatrixManager mGM;
 
@@ -80,6 +74,11 @@ public abstract class PlaudeToyService extends Service {
         return false;
     }
 
+    /** Redibuja ya, fuera del ciclo de un minuto. */
+    protected void redraw() {
+        draw();
+    }
+
     private void draw() {
         if (mGM == null) return;
         try {
@@ -90,14 +89,6 @@ public abstract class PlaudeToyService extends Service {
     }
 
     private int[] buildFrame() {
-        String[] logo = logo();
-        int[] frame = new int[SIZE * SIZE];
-        for (int y = 0; y < SIZE; y++) {
-            for (int x = 0; x < SIZE; x++) {
-                char c = logo[y].charAt(x);
-                frame[y * SIZE + x] = c == '#' ? FULL : c == '+' ? HALF : 0;
-            }
-        }
-        return frame;
+        return frame();
     }
 }

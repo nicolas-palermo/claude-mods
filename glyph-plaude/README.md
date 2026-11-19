@@ -4,19 +4,37 @@ Not a Claude mod: an Android app for the Nothing Phone (4a) Pro. It adds an alwa
 
 ![Preview](preview.png)
 
-## Install from the phone
+## How updates reach the phone
 
-Each push that touches this folder builds the APK in GitHub Actions and publishes it as a release named `glyph-plaude-N`.
+- **Drawings and screens** live in [`glyph.json`](glyph.json). The toy downloads it from `main` every few minutes, so a push to `glyph.json` changes the Glyph with no reinstall.
+- **Code changes** (anything under `app/`) make the workflow build a signed APK and publish it as release `glyph-plaude-v1.N`. Obtainium on the phone picks it up and installs it over the previous one.
 
-1. On the phone, open the repository's **Releases** page and download `plaude-glyph.apk` from the newest `glyph-plaude-N` release.
-2. Open the file. Android asks to allow installs from that app (the browser or Files): allow it and install.
+### glyph.json
+
+```json
+{
+  "screens": [
+    { "type": "bitmap", "rows": ["13 rows of 13 characters: # full, + half, . off"] },
+    { "type": "clock" }
+  ]
+}
+```
+
+With more than one screen, the toy shows a different one each minute. `clock` shows the time as HH over MM.
+
+## Install on the phone (once)
+
+1. Install [Obtainium](https://github.com/ImranR98/Obtainium) from its GitHub releases.
+2. In Obtainium, add the app with URL `https://github.com/nicolas-palermo/claude-mods`, turn on **Filter release titles by regular expression** with `Plaude Glyph`, and install it. Allow installs from Obtainium when Android asks.
 3. Settings › Glyph Interface › Flip to Glyph › Always-on Glyph Toy › pick **Plaude**.
+
+The APK is signed with the key in `signing/`. It is committed on purpose: this is a personal app with no data to protect, and a fixed key lets every new APK install over the old one.
 
 ## Build locally
 
 1. Download the GlyphMatrix SDK `.aar` from https://github.com/Nothing-Developer-Programme/GlyphMatrix-Developer-Kit into `app/libs/`.
-2. `gradle :app:assembleDebug`, then `adb install app/build/outputs/apk/debug/app-debug.apk`.
+2. `gradle :app:assembleRelease`, then `adb install app/build/outputs/apk/release/app-release.apk`.
 
-## Change the drawing
+## Draw
 
-The drawing is `LOGO` in `app/src/main/java/com/plaude/glyph/PlaudeToy.java`: 13 rows of 13 characters, `#` full, `+` half brightness, `.` off. `editor/glyph-editor.html` is a painter for the grid that exports that array.
+`editor/glyph-editor.html` is a painter for the grid that exports the 13 rows.

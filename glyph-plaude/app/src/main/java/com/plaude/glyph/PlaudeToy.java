@@ -1,8 +1,14 @@
 package com.plaude.glyph;
 
-/** Logo de Plaude a 12x12 (2x2 px por LED), corrido medio LED dentro de la matriz de 13x13. */
+import android.os.Handler;
+import android.os.Looper;
+
+import java.util.Calendar;
+
+/** El toy: muestra lo que diga glyph.json en el repo, con el logo de Plaude como respaldo. */
 public class PlaudeToy extends PlaudeToyService {
-    private static final String[] LOGO = {
+
+    private static final String[] FALLBACK = {
             ".......##....",
             ".......####..",
             ".......#####.",
@@ -18,8 +24,13 @@ public class PlaudeToy extends PlaudeToyService {
             "....###......",
     };
 
+    private final Handler main = new Handler(Looper.getMainLooper());
+
     @Override
-    protected String[] logo() {
-        return LOGO;
+    protected int[] frame() {
+        RemoteContent.refresh(this, () -> main.post(this::redraw));
+        GlyphContent content = RemoteContent.cached(this);
+        if (content == null) content = GlyphContent.ofBitmap(FALLBACK);
+        return content.frameAt(Calendar.getInstance());
     }
 }
