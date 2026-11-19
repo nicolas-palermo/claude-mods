@@ -21,7 +21,7 @@ import com.nothing.ketchum.GlyphToy;
  */
 public abstract class PlaudeToyService extends Service {
 
-    /** Frame de 13x13 (169 valores de brillo, 0 a 255) para el momento actual. */
+    /** Frame de 13x13 (169 valores de brillo, 0 a 4095) para el momento actual. */
     protected abstract int[] frame();
 
     private GlyphMatrixManager mGM;
