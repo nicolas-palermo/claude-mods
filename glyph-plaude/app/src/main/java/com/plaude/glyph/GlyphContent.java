@@ -12,6 +12,7 @@ import java.util.List;
  * Contenido del toy, leído de glyph.json. Formato:
  *
  * {
+ *   "brightness": 100,            // opcional, 0 a 100 (por defecto 100)
  *   "screens": [
  *     { "type": "bitmap", "rows": ["13 caracteres", ...13 filas] },
  *     { "type": "clock" }
@@ -23,8 +24,8 @@ import java.util.List;
 final class GlyphContent {
 
     static final int SIZE = 13;
-    private static final int FULL = 255;
-    private static final int HALF = 128;
+    // El SDK usa 0..4095 por LED en el array crudo (lo confirma GlyphMatrixUtils del .aar).
+    private static final int MAX = 4095;
 
     // Dígitos de 3x5 para el reloj.
     private static final String[][] DIGITS = {
@@ -41,13 +42,19 @@ final class GlyphContent {
     };
 
     private final List<Object> screens; // String[] (bitmap) o "clock"
+    private final int full;
+    private final int half;
 
-    private GlyphContent(List<Object> screens) {
+    private GlyphContent(List<Object> screens, int brightnessPercent) {
         this.screens = screens;
+        int pct = Math.max(0, Math.min(100, brightnessPercent));
+        this.full = MAX * pct / 100;
+        this.half = full / 2;
     }
 
     static GlyphContent parse(String json) throws JSONException {
-        JSONArray arr = new JSONObject(json).getJSONArray("screens");
+        JSONObject root = new JSONObject(json);
+        JSONArray arr = root.getJSONArray("screens");
         List<Object> list = new ArrayList<>();
         for (int i = 0; i < arr.length(); i++) {
             JSONObject s = arr.getJSONObject(i);
@@ -62,13 +69,13 @@ final class GlyphContent {
             }
         }
         if (list.isEmpty()) throw new JSONException("glyph.json no tiene pantallas");
-        return new GlyphContent(list);
+        return new GlyphContent(list, root.optInt("brightness", 100));
     }
 
     static GlyphContent ofBitmap(String[] rows) {
         List<Object> list = new ArrayList<>();
         list.add(rows);
-        return new GlyphContent(list);
+        return new GlyphContent(list, 100);
     }
 
     int[] frameAt(Calendar now) {
@@ -78,19 +85,19 @@ final class GlyphContent {
         return clock(now.get(Calendar.HOUR_OF_DAY), now.get(Calendar.MINUTE));
     }
 
-    private static int[] bitmap(String[] rows) {
+    private int[] bitmap(String[] rows) {
         int[] frame = new int[SIZE * SIZE];
         for (int y = 0; y < SIZE; y++) {
             String row = rows[y] == null ? "" : rows[y];
             for (int x = 0; x < SIZE && x < row.length(); x++) {
                 char c = row.charAt(x);
-                frame[y * SIZE + x] = c == '#' ? FULL : c == '+' ? HALF : 0;
+                frame[y * SIZE + x] = c == '#' ? full : c == '+' ? half : 0;
             }
         }
         return frame;
     }
 
-    private static int[] clock(int h, int m) {
+    private int[] clock(int h, int m) {
         int[] frame = new int[SIZE * SIZE];
         drawDigit(frame, h / 10, 3, 1);
         drawDigit(frame, h % 10, 7, 1);
@@ -99,10 +106,10 @@ final class GlyphContent {
         return frame;
     }
 
-    private static void drawDigit(int[] frame, int d, int x0, int y0) {
+    private void drawDigit(int[] frame, int d, int x0, int y0) {
         String[] g = DIGITS[d];
         for (int y = 0; y < 5; y++)
             for (int x = 0; x < 3; x++)
-                if (g[y].charAt(x) == '#') frame[(y0 + y) * SIZE + x0 + x] = FULL;
+                if (g[y].charAt(x) == '#') frame[(y0 + y) * SIZE + x0 + x] = full;
     }
 }

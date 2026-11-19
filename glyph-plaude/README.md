@@ -13,6 +13,7 @@ Not a Claude mod: an Android app for the Nothing Phone (4a) Pro. It adds an alwa
 
 ```json
 {
+  "brightness": 100,
   "screens": [
     { "type": "bitmap", "rows": ["13 rows of 13 characters: # full, + half, . off"] },
     { "type": "clock" }
@@ -20,7 +21,7 @@ Not a Claude mod: an Android app for the Nothing Phone (4a) Pro. It adds an alwa
 }
 ```
 
-With more than one screen, the toy shows a different one each minute. `clock` shows the time as HH over MM.
+With more than one screen, the toy shows a different one each minute. `clock` shows the time as HH over MM. `brightness` (0 to 100, default 100) dims every screen.
 
 ## Install on the phone (once)
 
