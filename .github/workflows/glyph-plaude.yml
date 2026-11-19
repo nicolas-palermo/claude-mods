@@ -1,0 +1,56 @@
+name: glyph-plaude APK
+
+on:
+  push:
+    paths:
+      - 'glyph-plaude/app/**'
+      - 'glyph-plaude/*.gradle'
+      - 'glyph-plaude/gradle.properties'
+      - 'glyph-plaude/signing/**'
+      - '.github/workflows/glyph-plaude.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: glyph-plaude
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Download GlyphMatrix SDK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          REPO=Nothing-Developer-Programme/GlyphMatrix-Developer-Kit
+          AAR=$(gh api "repos/$REPO/git/trees/HEAD?recursive=1" --jq '[.tree[].path | select(endswith(".aar"))] | sort | last')
+          echo "SDK: $AAR"
+          curl -fsSL -o app/libs/glyph-matrix-sdk.aar "https://raw.githubusercontent.com/$REPO/HEAD/$AAR"
+          ls -la app/libs
+
+      - name: Build APK
+        run: gradle :app:assembleRelease --stacktrace
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/release/app-release.apk plaude-glyph.apk
+          TAG="glyph-plaude-v1.${{ github.run_number }}"
+          gh release create "$TAG" plaude-glyph.apk \
+            --target "${{ github.sha }}" \
+            --title "Plaude Glyph v1.${{ github.run_number }}" \
+            --notes "APK del Glyph Toy de Plaude para el Nothing Phone (4a) Pro. Built from ${{ github.ref_name }}."

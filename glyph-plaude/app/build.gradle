@@ -1,0 +1,40 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'com.plaude.glyph'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'com.plaude.glyph'
+        minSdk 34
+        targetSdk 35
+        // En CI, el número de corrida; así cada release es una versión más nueva.
+        def run = (System.getenv('GITHUB_RUN_NUMBER') ?: '1') as int
+        versionCode run
+        versionName "1.${run}"
+    }
+    signingConfigs {
+        // Clave fija para que cada APK nuevo se instale encima del anterior.
+        // Está en el repo a propósito: es una app personal sin datos sensibles.
+        plaude {
+            storeFile file('../signing/plaude-glyph.jks')
+            storePassword 'plaude-glyph'
+            keyAlias 'plaude'
+            keyPassword 'plaude-glyph'
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.plaude
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    // Bajá el .aar de https://github.com/Nothing-Developer-Programme/GlyphMatrix-Developer-Kit y ponelo en app/libs/
+    implementation fileTree(dir: 'libs', include: ['*.aar'])
+}
