@@ -1,0 +1,22 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'com.plaude.glyph'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'com.plaude.glyph'
+        minSdk 34
+        targetSdk 35
+        versionCode 1
+        versionName '1.0'
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    // Bajá el .aar de https://github.com/Nothing-Developer-Programme/GlyphMatrix-Developer-Kit y ponelo en app/libs/
+    implementation fileTree(dir: 'libs', include: ['*.aar'])
+}
