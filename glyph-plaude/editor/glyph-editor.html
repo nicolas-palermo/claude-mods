@@ -104,13 +104,20 @@ textarea {
 }
 textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .status { min-height: 1.4em; font-size: 13px; color: var(--muted); margin: 0; }
+.frames { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+.thumb { flex: 0 0 auto; width: 52px; height: 52px; border-radius: 50%; border: 2px solid var(--line); background: #070809; padding: 3px; cursor: pointer; }
+.thumb[aria-current="true"] { border-color: var(--accent); }
+.thumb canvas { width: 100%; height: 100%; display: block; }
+.thumb:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.speed { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.speed input { flex: 1; min-width: 0; accent-color: var(--accent); }
 @media (prefers-reduced-motion: reduce) { .led { transition: none; } }
 </style>
 
 <div class="wrap">
   <header>
     <h1>GLYPH <span>●</span> PAINTER</h1>
-    <p class="sub">Matriz del Nothing Phone (4a) Pro: 137 LEDs en una grilla circular de 13×13. Arrastrá para pintar con LED lleno o a media intensidad, y copiá el array <code>LOGO</code> para pegarlo en la clase del toy.</p>
+    <p class="sub">Matriz del Nothing Phone (4a) Pro: 137 LEDs en una grilla circular de 13×13. Pintá uno o varios frames y copiá la pantalla para pegarla en <code>glyph.json</code>: con un frame sale un dibujo, con varios una animación.</p>
   </header>
 
   <div class="main">
@@ -131,18 +138,20 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
       </div>
 
       <div class="group">
-        <div class="label">Variantes del logo</div>
+        <div class="label">Frames</div>
+        <div class="frames" id="frames" role="listbox" aria-label="Frames de la animación"></div>
         <div class="row">
-          <button class="btn" data-preset="final">Final</button>
-          <button class="btn" data-preset="union">1 · unión</button>
-          <button class="btn" data-preset="shifted">2 · corrido</button>
-          <button class="btn" data-preset="halftone">3 · media luz</button>
+          <button class="btn" id="add-frame">+ Duplicar frame</button>
+          <button class="btn" id="del-frame">Borrar frame</button>
+          <button class="btn" id="play" aria-pressed="false">Reproducir</button>
         </div>
+        <label class="speed" for="fps">Velocidad <input type="range" id="fps" min="1" max="25" value="8"> <span id="fps-val">8 fps</span></label>
       </div>
 
       <div class="group">
         <div class="label">Grilla</div>
         <div class="row">
+          <button class="btn" id="load-logo">Logo de Plaude</button>
           <button class="btn" id="invert">Invertir</button>
           <button class="btn" id="mirror">Espejar</button>
           <button class="btn" id="clear">Limpiar</button>
@@ -150,13 +159,13 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
       </div>
 
       <div class="group">
-        <div class="label">Código</div>
-        <textarea id="code" spellcheck="false" aria-label="Array LOGO en Java"></textarea>
+        <div class="label">Pantalla para glyph.json</div>
+        <textarea id="code" spellcheck="false" aria-label="Pantalla en JSON"></textarea>
         <div class="row">
-          <button class="btn primary" id="copy">Copiar código</button>
+          <button class="btn primary" id="copy">Copiar</button>
           <button class="btn" id="apply">Aplicar texto</button>
         </div>
-        <p class="hint">También podés editar el texto (<code>#</code> lleno, <code>+</code> media, <code>.</code> apagado) y tocar Aplicar texto.</p>
+        <p class="hint">Podés pegar acá una pantalla de <code>glyph.json</code> (dibujo o animación) o 13 filas sueltas con <code>#</code> lleno, <code>+</code> media y <code>.</code> apagado, y tocar Aplicar texto.</p>
         <p class="status" id="status" role="status"></p>
       </div>
     </aside>
@@ -166,24 +175,22 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
 <script>
 (function () {
   var N = 13, C = 6, R2 = 42.25;
-  var PRESETS = {
-    final: [".......##....",".......####..",".......#####.",".......#####.",".......#####.",".......####..",".......##....",".....##......","...####......","..#####......","..#####......","..#####......","....###......"],
-    union: [".......######",".......######",".......#####.",".......#####.",".......####..",".......###...","......#......","...###.......","..####.......",".#####.......",".#####.......","######.......","######......."],
-    shifted: [".............",".......####..",".......#####.",".......#####.",".......#####.",".......####..",".......##....",".....##......","...####......","..#####......","..#####......","..#####......","....###......"],
-    halftone: ["......+##....","......+####..","......+#####.","......+#####.","......+####+.","......+###+..",".....+++.....","..+###+......",".+####+......",".#####+......",".#####+......","..####+......","....##+......"]
-  };
-  var NAMES = { final: 'final', union: '1 · unión', shifted: '2 · corrido', halftone: '3 · media luz' };
+  var LOGO = [".......##....",".......####..",".......#####.",".......#####.",".......#####.",".......####..",".......##....",".....##......","...####......","..#####......","..#####......","..#####......","....###......"];
   var CH = ['.', '+', '#'];
   function inCircle(x, y) { return (x - C) * (x - C) + (y - C) * (y - C) <= R2; }
 
-  var state = [];
+  var frames = [];   // cada frame: matriz [y][x] con 0, 1 o 2
+  var cur = 0;
   var leds = [];
   var gridEl = document.getElementById('grid');
+  var framesEl = document.getElementById('frames');
   var codeEl = document.getElementById('code');
   var statusEl = document.getElementById('status');
   var countEl = document.getElementById('count');
-  var tool = 2; // 2 lleno, 1 media, 0 borrar
+  var fpsEl = document.getElementById('fps');
+  var tool = 2;
   var dragValue = null;
+  var playTimer = null;
 
   function fromRows(rows) {
     var s = [];
@@ -196,37 +203,80 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
     }
     return s;
   }
-  function toRows() {
-    return state.map(function (r) { return r.map(function (v) { return CH[v]; }).join(''); });
+  function toRows(f) { return f.map(function (r) { return r.map(function (v) { return CH[v]; }).join(''); }); }
+  function state() { return frames[cur]; }
+  function fps() { return +fpsEl.value; }
+
+  function toJson() {
+    var rowsJson = function (f, ind) {
+      return '[\n' + toRows(f).map(function (r) { return ind + '  "' + r + '"'; }).join(',\n') + '\n' + ind + ']';
+    };
+    if (frames.length === 1) {
+      return '{\n  "type": "bitmap",\n  "rows": ' + rowsJson(frames[0], '  ') + '\n}';
+    }
+    return '{\n  "type": "animation",\n  "frameMs": ' + Math.round(1000 / fps()) + ',\n  "frames": [\n' +
+      frames.map(function (f) { return '    ' + rowsJson(f, '    '); }).join(',\n') + '\n  ]\n}';
   }
-  function toJava() {
-    return 'private static final String[] LOGO = {\n' +
-      toRows().map(function (r) { return '        "' + r + '",'; }).join('\n') +
-      '\n};';
+
+  function drawThumb(canvas, f) {
+    var ctx = canvas.getContext('2d');
+    var s = canvas.width / N;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (var y = 0; y < N; y++) for (var x = 0; x < N; x++) {
+      if (!inCircle(x, y)) continue;
+      ctx.fillStyle = f[y][x] === 2 ? '#f6f7f8' : f[y][x] === 1 ? '#8a8d91' : '#24272b';
+      ctx.beginPath();
+      ctx.arc(x * s + s / 2, y * s + s / 2, s * 0.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function renderFrames() {
+    framesEl.innerHTML = '';
+    frames.forEach(function (f, i) {
+      var b = document.createElement('button');
+      b.className = 'thumb';
+      b.type = 'button';
+      b.id = 'frame-' + i;
+      b.setAttribute('role', 'option');
+      b.setAttribute('aria-current', i === cur ? 'true' : 'false');
+      b.setAttribute('aria-label', 'Frame ' + (i + 1));
+      var c = document.createElement('canvas');
+      c.width = 104; c.height = 104;
+      b.appendChild(c);
+      drawThumb(c, f);
+      b.onclick = function () { stop(); cur = i; render(); };
+      framesEl.appendChild(b);
+    });
+    document.getElementById('del-frame').disabled = frames.length < 2;
   }
 
   function render() {
-    var full = 0, half = 0;
+    var full = 0, half = 0, f = state();
     for (var y = 0; y < N; y++) for (var x = 0; x < N; x++) {
       var b = leds[y][x];
       if (!b) continue;
-      var v = state[y][x];
+      var v = f[y][x];
       b.classList.toggle('on', v === 2);
       b.classList.toggle('half', v === 1);
       b.setAttribute('aria-label', 'LED fila ' + (y + 1) + ' columna ' + (x + 1) + ': ' + ['apagado', 'media', 'lleno'][v]);
       if (v === 2) full++; else if (v === 1) half++;
     }
-    countEl.textContent = full + ' llenos · ' + half + ' a media · ' + (137 - full - half) + ' apagados';
-    if (document.activeElement !== codeEl) codeEl.value = toJava();
+    countEl.textContent = 'Frame ' + (cur + 1) + ' de ' + frames.length + ' · ' + full + ' llenos · ' + half + ' a media';
+    if (document.activeElement !== codeEl) codeEl.value = toJson();
+    renderFrames();
     save();
   }
   function save() {
-    try { localStorage.setItem('glyph-painter', JSON.stringify(toRows())); } catch (e) {}
+    try { localStorage.setItem('glyph-painter-v2', JSON.stringify({ frames: frames.map(toRows), fps: fps() })); } catch (e) {}
   }
   function load() {
     try {
-      var v = JSON.parse(localStorage.getItem('glyph-painter'));
-      if (Array.isArray(v) && v.length === N) return v;
+      var v = JSON.parse(localStorage.getItem('glyph-painter-v2'));
+      if (v && Array.isArray(v.frames) && v.frames.length) {
+        if (v.fps) fpsEl.value = v.fps;
+        return v.frames.map(fromRows);
+      }
     } catch (e) {}
     return null;
   }
@@ -254,8 +304,8 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
   function setAt(el, value) {
     if (!el || !el.classList || !el.classList.contains('led')) return;
     var x = +el.dataset.x, y = +el.dataset.y;
-    if (state[y][x] === value) return;
-    state[y][x] = value;
+    if (state()[y][x] === value) return;
+    state()[y][x] = value;
     render();
   }
 
@@ -264,8 +314,9 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
     var el = e.target;
     if (!el.classList.contains('led')) return;
     e.preventDefault();
+    stop();
     var x = +el.dataset.x, y = +el.dataset.y;
-    dragValue = tool === 0 ? 0 : (state[y][x] === tool ? 0 : tool);
+    dragValue = tool === 0 ? 0 : (state()[y][x] === tool ? 0 : tool);
     setAt(el, dragValue);
   });
   window.addEventListener('pointermove', function (e) {
@@ -278,7 +329,7 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
     if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('led')) {
       e.preventDefault();
       var x = +e.target.dataset.x, y = +e.target.dataset.y;
-      state[y][x] = (state[y][x] + 2) % 3; render();
+      state()[y][x] = (state()[y][x] + 2) % 3; render();
     }
   });
 
@@ -293,46 +344,96 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; 
   document.getElementById('tool-half').onclick = function () { setTool(1); };
   document.getElementById('tool-erase').onclick = function () { setTool(0); };
 
-  Array.prototype.forEach.call(document.querySelectorAll('[data-preset]'), function (b) {
-    b.onclick = function () {
-      state = fromRows(PRESETS[b.dataset.preset]); render();
-      status('Cargué la variante ' + NAMES[b.dataset.preset] + '.');
-    };
-  });
-  document.getElementById('clear').onclick = function () { state = fromRows([]); render(); status('Grilla vacía.'); };
+  function stop() {
+    if (playTimer) { clearInterval(playTimer); playTimer = null; }
+    var p = document.getElementById('play');
+    p.textContent = 'Reproducir';
+    p.setAttribute('aria-pressed', 'false');
+  }
+  function play() {
+    stop();
+    if (frames.length < 2) { status('Agregá al menos otro frame para animar.'); return; }
+    var p = document.getElementById('play');
+    p.textContent = 'Frenar';
+    p.setAttribute('aria-pressed', 'true');
+    playTimer = setInterval(function () { cur = (cur + 1) % frames.length; render(); }, 1000 / fps());
+  }
+  document.getElementById('play').onclick = function () { playTimer ? stop() : play(); };
+  fpsEl.oninput = function () {
+    document.getElementById('fps-val').textContent = fps() + ' fps';
+    if (playTimer) play();
+    render();
+  };
+  document.getElementById('add-frame').onclick = function () {
+    stop();
+    frames.splice(cur + 1, 0, fromRows(toRows(state())));
+    cur++;
+    render();
+    status('Frame ' + (cur + 1) + ' agregado como copia del anterior.');
+  };
+  document.getElementById('del-frame').onclick = function () {
+    if (frames.length < 2) return;
+    stop();
+    frames.splice(cur, 1);
+    cur = Math.min(cur, frames.length - 1);
+    render();
+  };
+
+  document.getElementById('load-logo').onclick = function () { stop(); frames[cur] = fromRows(LOGO); render(); status('Cargué el logo de Plaude en este frame.'); };
+  document.getElementById('clear').onclick = function () { stop(); frames[cur] = fromRows([]); render(); };
   document.getElementById('invert').onclick = function () {
-    for (var y = 0; y < N; y++) for (var x = 0; x < N; x++) if (inCircle(x, y)) state[y][x] = 2 - state[y][x];
+    for (var y = 0; y < N; y++) for (var x = 0; x < N; x++) if (inCircle(x, y)) state()[y][x] = 2 - state()[y][x];
     render();
   };
   document.getElementById('mirror').onclick = function () {
-    state = state.map(function (r) { return r.slice().reverse(); });
-    for (var y = 0; y < N; y++) for (var x = 0; x < N; x++) if (!inCircle(x, y)) state[y][x] = 0;
+    var f = state().map(function (r) { return r.slice().reverse(); });
+    frames[cur] = fromRows(toRows(f));
     render();
   };
 
   function status(msg) { statusEl.textContent = msg; }
 
   document.getElementById('copy').onclick = function () {
-    var text = toJava();
+    var text = toJson();
     codeEl.value = text;
-    function fallback() { codeEl.focus(); codeEl.select(); status('Seleccioné el código: copialo con Cmd+C.'); }
+    function fallback() { codeEl.focus(); codeEl.select(); status('Seleccioné el texto: copialo con Cmd+C.'); }
     try {
-      navigator.clipboard.writeText(text).then(function () { status('Código copiado.'); }, fallback);
+      navigator.clipboard.writeText(text).then(function () { status('Copiado. Pegalo dentro de "screens" en glyph.json.'); }, fallback);
     } catch (e) { fallback(); }
   };
   document.getElementById('apply').onclick = function () {
-    var rows = (codeEl.value.match(/[#.+]{13}/g) || []);
-    if (rows.length !== N) {
-      status('No encontré 13 filas de 13 caracteres con #, + y puntos. Revisá el texto.');
+    var text = codeEl.value.trim();
+    var parsed = null;
+    try { parsed = JSON.parse(text); } catch (e) {}
+    var list = null;
+    if (parsed && Array.isArray(parsed.frames)) {
+      list = parsed.frames;
+      if (parsed.frameMs) fpsEl.value = Math.max(1, Math.min(25, Math.round(1000 / parsed.frameMs)));
+      if (parsed.fps) fpsEl.value = Math.max(1, Math.min(25, Math.round(parsed.fps)));
+    } else if (parsed && Array.isArray(parsed.rows)) {
+      list = [parsed.rows];
+    } else {
+      var rows = text.match(/[#.+]{13}/g) || [];
+      if (rows.length && rows.length % N === 0) {
+        list = [];
+        for (var i = 0; i < rows.length; i += N) list.push(rows.slice(i, i + N));
+      }
+    }
+    if (!list || !list.length || list.some(function (f) { return !Array.isArray(f) || f.length !== N; })) {
+      status('No pude leerlo. Pegá una pantalla de glyph.json o bloques de 13 filas de 13 caracteres.');
       return;
     }
-    state = fromRows(rows);
+    stop();
+    frames = list.map(fromRows);
+    cur = 0;
     codeEl.blur();
+    document.getElementById('fps-val').textContent = fps() + ' fps';
     render();
-    status('Apliqué el texto a la grilla.');
+    status('Apliqué ' + frames.length + (frames.length === 1 ? ' frame.' : ' frames.'));
   };
 
-  state = fromRows(PRESETS.final);
+  frames = load() || [fromRows(LOGO)];
+  document.getElementById('fps-val').textContent = fps() + ' fps';
   render();
 })();
 </script>
