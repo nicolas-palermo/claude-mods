@@ -9,32 +9,29 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
 import android.os.Messenger;
+import android.util.Log;
 
 import com.nothing.ketchum.Glyph;
 import com.nothing.ketchum.GlyphMatrixManager;
 import com.nothing.ketchum.GlyphToy;
 
 /**
- * Base de los Glyph Toys AOD que muestran el logo de Plaude en la matriz 13x13
- * (137 LEDs, circular) del Nothing Phone (4a) Pro. La subclase arma cada frame.
- * Las esquinas fuera del círculo no existen físicamente en el (4a) Pro.
+ * Base de un Glyph Toy para el Nothing Phone (4a) Pro: se conecta al servicio de Glyph,
+ * registra el dispositivo y reenvía los eventos. La subclase decide qué dibujar.
  */
 public abstract class PlaudeToyService extends Service {
 
-    /** Frame de 13x13 (169 valores de brillo, 0 a 4095) para el momento actual. */
-    protected abstract int[] frame();
+    protected static final String TAG = "PlaudeGlyph";
 
     private GlyphMatrixManager mGM;
+    private boolean mConnected;
 
     private final Handler mHandler = new Handler(Looper.getMainLooper()) {
         @Override
         public void handleMessage(Message msg) {
             if (msg.what == GlyphToy.MSG_GLYPH_TOY) {
                 Bundle data = msg.getData();
-                String event = data.getString(GlyphToy.MSG_GLYPH_TOY_DATA);
-                if (GlyphToy.EVENT_AOD.equals(event)) {
-                    draw(); // llega una vez por minuto en AOD
-                }
+                onGlyphEvent(data.getString(GlyphToy.MSG_GLYPH_TOY_DATA));
             } else {
                 super.handleMessage(msg);
             }
@@ -48,13 +45,16 @@ public abstract class PlaudeToyService extends Service {
             try {
                 mGM.register(Glyph.DEVICE_25111p);
             } catch (Exception e) {
-                android.util.Log.e("PlaudeGlyph", "register falló", e);
+                Log.e(TAG, "register falló", e);
             }
-            draw();
+            mConnected = true;
+            onConnected();
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
+            mConnected = false;
+            onDisconnected();
         }
     };
 
@@ -67,28 +67,41 @@ public abstract class PlaudeToyService extends Service {
 
     @Override
     public boolean onUnbind(Intent intent) {
+        mConnected = false;
+        onDisconnected();
         if (mGM != null) {
+            try {
+                mGM.turnOff();
+            } catch (Exception e) {
+                Log.w(TAG, "turnOff falló", e);
+            }
             mGM.unInit();
             mGM = null;
         }
         return false;
     }
 
-    /** Redibuja ya, fuera del ciclo de un minuto. */
-    protected void redraw() {
-        draw();
+    /** Ya se puede dibujar. */
+    protected abstract void onConnected();
+
+    /** Ya no se puede dibujar: frenar loops. */
+    protected abstract void onDisconnected();
+
+    /** Eventos del sistema: "aod" cada minuto; en el (4a) Pro no hay botón. */
+    protected void onGlyphEvent(String event) {
     }
 
-    private void draw() {
-        if (mGM == null) return;
+    protected boolean isConnected() {
+        return mConnected && mGM != null;
+    }
+
+    /** Manda un frame crudo (169 valores de 0 a 4095). */
+    protected void show(int[] frame) {
+        if (!isConnected()) return;
         try {
-            mGM.setMatrixFrame(buildFrame());
+            mGM.setMatrixFrame(frame);
         } catch (Exception e) {
-            android.util.Log.e("PlaudeGlyph", "setMatrixFrame falló", e);
+            Log.e(TAG, "setMatrixFrame falló", e);
         }
-    }
-
-    private int[] buildFrame() {
-        return frame();
     }
 }

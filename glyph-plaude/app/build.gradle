@@ -32,9 +32,22 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+    testOptions {
+        unitTests.all {
+            testLogging {
+                events 'failed'
+                exceptionFormat 'full'
+            }
+        }
+    }
 }
 
 dependencies {
-    // Bajá el .aar de https://github.com/Nothing-Developer-Programme/GlyphMatrix-Developer-Kit y ponelo en app/libs/
+    // SDK unificado de Nothing: https://github.com/Nothing-Developer-Programme/Glyph-Developer-Kit (sdk/).
+    // No se versiona acá; CI lo baja en cada build. Para compilar a mano, ponelo en app/libs/.
     implementation fileTree(dir: 'libs', include: ['*.aar'])
+
+    testImplementation 'junit:junit:4.13.2'
+    // org.json real para los tests (el de android.jar es solo una cáscara).
+    testImplementation 'org.json:json:20240303'
 }
