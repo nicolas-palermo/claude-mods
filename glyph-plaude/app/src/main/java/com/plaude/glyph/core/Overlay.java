@@ -11,12 +11,24 @@ public final class Overlay {
     /** 0 = hasta que se saque a mano (llamadas). */
     public final long durationMs;
     public final int priority;
+    /** Si no es null, se dibuja esta animación en vez del ícono (eventos de Glyph Events). */
+    public final EventAnimation animation;
 
     public Overlay(String icon, long startMs, long durationMs, int priority) {
+        this(icon, startMs, durationMs, priority, null);
+    }
+
+    private Overlay(String icon, long startMs, long durationMs, int priority, EventAnimation animation) {
         this.icon = icon;
         this.startMs = startMs;
         this.durationMs = durationMs;
         this.priority = priority;
+        this.animation = animation;
+    }
+
+    /** Una animación que llegó por push: dura lo que dura la animación. */
+    public static Overlay forAnimation(EventAnimation a, long startMs, int priority) {
+        return new Overlay("event", startMs, a.totalMs(), priority, a);
     }
 
     public boolean activeAt(long nowMs) {
@@ -25,6 +37,10 @@ public final class Overlay {
 
     /** Titila tres veces al entrar y después queda fijo. */
     public void render(Grid g, long nowMs) {
+        if (animation != null) {
+            animation.render(g, nowMs - startMs);
+            return;
+        }
         String[] rows = Icons.get(icon);
         if (rows == null) rows = Icons.get("bell");
         long t = nowMs - startMs;
@@ -34,6 +50,10 @@ public final class Overlay {
     }
 
     public long frameIntervalMs(long nowMs) {
+        if (animation != null) {
+            long step = animation.frameIntervalMs();
+            return step - Math.max(0, nowMs - startMs) % step;
+        }
         return nowMs - startMs < 1500 ? 250 : 1000;
     }
 }

@@ -10,6 +10,7 @@ Not a Claude mod: an Android app for the Nothing Phone (4a) Pro. It drives the p
 - **Notifications and calls.** With notification access, a new notification shows its app's icon for a few seconds, and a call shows a phone icon until it ends.
 - **Live data.** Weather (Open-Meteo, no key) and any GitHub search count (open PRs, review requests), refreshed every 10 minutes.
 - **Snake.** An app that draws on the matrix with `setAppMatrixFrame`. Volume down turns left, volume up turns right; the circle's edge is the wall.
+- **Glyph Events.** Plays animations with sound pushed by the [glyph-events](../glyph-events) backend over FCM. Pair it from that web page; the app gets its Firebase config there, so no `google-services.json` is needed.
 - **Launcher app.** Live preview of what the matrix shows, status of content, data and permissions, and shortcuts to the toy picker, notification access and Snake.
 
 ## How updates reach the phone
@@ -74,5 +75,6 @@ The APK is signed with the key in `signing/`. It is committed on purpose: this i
 
 - `app/src/main/java/com/plaude/glyph/core/` is plain Java with no Android dependencies: grid and mask, font, icons, screens, playlist, the engine that picks overlay or screen and the next redraw time, and Snake. It is covered by JUnit tests in `app/src/test/`.
 - The Android layer is thin: `PlaudeToy` (toy service loop), `GlyphNotificationListener`, `LiveData`, `RemoteContent`, `MainActivity`, `SnakeActivity` (its own `:game` process, because the SDK keeps one connection per process).
+- Glyph Events: `EventMessagingService` (FCM), `EventPlayerService` (sound, and the matrix through `setAppMatrixFrame` when the toy is not running; own `:player` process), `PairActivity` (`plaude://pair` link), `core/EventAnimation`.
 - The SDK's raw frame is 0..4095 per LED, not 0..255.
 - Build locally: download the unified SDK `.aar` from `Nothing-Developer-Programme/Glyph-Developer-Kit/sdk/` into `app/libs/`, then `gradle :app:testReleaseUnitTest :app:assembleRelease`.
