@@ -1,0 +1,30 @@
+name: glyph-events web
+
+on:
+  push:
+    paths:
+      - 'glyph-events/**'
+      - '.github/workflows/glyph-events.yml'
+  pull_request:
+    paths:
+      - 'glyph-events/**'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: glyph-events/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: glyph-events/web/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'

@@ -7,6 +7,7 @@ Mods for Claude's own interface: themes, panels, commands and more. Each mod liv
 | [vaporwave](./vaporwave) | Neon pink, violet and cyan colors with an animated sunset, striped sun and a retro grid that scrolls toward you. |
 | [guided-view](./guided-view) | Review a pull request in a side panel: its changes grouped by meaning, each with a title, a summary and the diff of its files. |
 | [glyph-plaude](./glyph-plaude) | Not a Claude mod: an Android app that shows the Plaude logo on the Nothing Phone (4a) Pro's Glyph Matrix. |
+| [glyph-events](./glyph-events) | Not a Claude mod: webhooks from any service play Glyph animations with sound on the phone, by rules edited on a web page (Next.js, Supabase, FCM). |
 
 ## Install a mod
 

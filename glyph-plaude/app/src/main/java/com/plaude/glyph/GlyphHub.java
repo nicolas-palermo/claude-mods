@@ -4,6 +4,7 @@ import android.content.Context;
 
 import com.plaude.glyph.core.Config;
 import com.plaude.glyph.core.Engine;
+import com.plaude.glyph.core.EventAnimation;
 import com.plaude.glyph.core.Grid;
 import com.plaude.glyph.core.Overlay;
 
@@ -22,6 +23,7 @@ final class GlyphHub {
 
     static final int PRIORITY_NOTIFICATION = 1;
     static final int PRIORITY_CALL = 2;
+    static final int PRIORITY_EVENT = 3;
 
     private static final Engine ENGINE = new Engine();
     private static final CopyOnWriteArrayList<Listener> LISTENERS = new CopyOnWriteArrayList<>();
@@ -56,6 +58,12 @@ final class GlyphHub {
         String icon = n.iconFor(pkg);
         if (icon == null) return;
         ENGINE.addOverlay(new Overlay(icon, System.currentTimeMillis(), n.showMs, PRIORITY_NOTIFICATION));
+        changed();
+    }
+
+    /** Una animación de Glyph Events: se impone a todo mientras dura. */
+    static void playEvent(EventAnimation a) {
+        ENGINE.addOverlay(Overlay.forAnimation(a, System.currentTimeMillis(), PRIORITY_EVENT));
         changed();
     }
 

@@ -1,0 +1,25 @@
+{
+  "name": "glyph-events",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "tsc --noEmit",
+    "test": "node --test --experimental-strip-types --no-warnings lib/*.test.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.119.2",
+    "next": "16.4.5",
+    "react": "19.2.9",
+    "react-dom": "19.2.9",
+    "server-only": "0.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.0",
+    "@types/react": "19.2.2",
+    "@types/react-dom": "19.2.2",
+    "typescript": "5.8.3"
+  }
+}

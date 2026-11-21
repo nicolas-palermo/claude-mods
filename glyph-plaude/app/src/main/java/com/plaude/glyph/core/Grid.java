@@ -57,8 +57,8 @@ public final class Grid {
     }
 
     /**
-     * Dibuja filas de texto: '#' lleno, '+' medio, cualquier otra cosa no toca la celda.
-     * Con opaque=true, los '.' apagan la celda.
+     * Dibuja filas de texto: '#' lleno, '+' medio, '1'..'9' niveles (9 = lleno), cualquier otra
+     * cosa no toca la celda. Con opaque=true, los '.' (y '0') apagan la celda.
      */
     public Grid drawRows(String[] rows, int ox, int oy, boolean opaque) {
         for (int y = 0; y < rows.length; y++) {
@@ -68,6 +68,7 @@ public final class Grid {
                 char c = r.charAt(x);
                 if (c == '#') set(ox + x, oy + y, ON);
                 else if (c == '+') set(ox + x, oy + y, HALF);
+                else if (c >= '1' && c <= '9') set(ox + x, oy + y, (c - '0') * ON / 9);
                 else if (opaque) set(ox + x, oy + y, 0);
             }
         }

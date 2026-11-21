@@ -46,6 +46,8 @@ dependencies {
     // SDK unificado de Nothing: https://github.com/Nothing-Developer-Programme/Glyph-Developer-Kit (sdk/).
     // No se versiona acá; CI lo baja en cada build. Para compilar a mano, ponelo en app/libs/.
     implementation fileTree(dir: 'libs', include: ['*.aar'])
+    // Glyph Events: push con FCM. Sin google-services.json: la config la da el backend al vincular.
+    implementation 'com.google.firebase:firebase-messaging:24.1.0'
 
     testImplementation 'junit:junit:4.13.2'
     // org.json real para los tests (el de android.jar es solo una cáscara).

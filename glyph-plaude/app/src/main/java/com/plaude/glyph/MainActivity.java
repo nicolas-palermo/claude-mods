@@ -138,6 +138,17 @@ public class MainActivity extends Activity implements GlyphHub.Listener {
         }
         boolean notif = GlyphNotificationListener.isConnected();
         sb.append("\nNotificaciones: ").append(notif ? "activadas" : "sin permiso");
+        if (Events.paired(this)) {
+            android.content.SharedPreferences ep = Events.prefs(this);
+            sb.append("\nGlyph Events: vinculado a ").append(android.net.Uri.parse(Events.baseUrl(this)).getHost());
+            long last = ep.getLong("last_play_at", 0);
+            if (last > 0) sb.append(", último evento \"").append(ep.getString("last_play", "")).append("\" ")
+                    .append(DateUtils.getRelativeTimeSpanString(last));
+            String e = ep.getString("error", null);
+            if (e != null) sb.append(" (error: ").append(e).append(")");
+        } else {
+            sb.append("\nGlyph Events: sin vincular. Abrí la web de Glyph Events en este teléfono y tocá Vincular.");
+        }
         sb.append("\nVersión ").append(BuildConfigCompat.versionName(this));
         status.setText(sb.toString());
         notifButton.setText(notif ? "Acceso a notificaciones: activado" : "Dar acceso a notificaciones");

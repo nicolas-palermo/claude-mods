@@ -15,13 +15,31 @@ final class Http {
     }
 
     static String get(String url, Map<String, String> headers) throws IOException {
+        return request("GET", url, headers, null);
+    }
+
+    /** POST con cuerpo JSON. */
+    static String postJson(String url, Map<String, String> headers, String json) throws IOException {
+        return request("POST", url, headers, json);
+    }
+
+    private static String request(String method, String url, Map<String, String> headers, String json)
+            throws IOException {
         HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
+        c.setRequestMethod(method);
         c.setConnectTimeout(10_000);
         c.setReadTimeout(10_000);
         c.setUseCaches(false);
         c.setRequestProperty("User-Agent", "plaude-glyph");
         if (headers != null) {
             for (Map.Entry<String, String> h : headers.entrySet()) c.setRequestProperty(h.getKey(), h.getValue());
+        }
+        if (json != null) {
+            c.setDoOutput(true);
+            c.setRequestProperty("Content-Type", "application/json");
+            try (java.io.OutputStream os = c.getOutputStream()) {
+                os.write(json.getBytes(StandardCharsets.UTF_8));
+            }
         }
         try {
             int code = c.getResponseCode();
